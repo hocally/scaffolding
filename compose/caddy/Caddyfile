@@ -1,0 +1,20 @@
+{
+	auto_https off
+	admin off
+}
+
+http://gitea {
+	reverse_proxy gitea:3000
+}
+
+http://campsites {
+	reverse_proxy sample-app:8000
+}
+
+:80 {
+	handle_path /campsites* {
+		reverse_proxy sample-app:8000
+	}
+
+	reverse_proxy gitea:3000
+}

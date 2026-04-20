@@ -1,0 +1,97 @@
+name: ${COMPOSE_PROJECT_NAME:-homeserver}
+
+services:
+  caddy:
+    image: caddy:2.11.2-alpine@sha256:834468128c7696cec0ceea6172f7d692daf645ae51983ca76e39da54a97c570d
+    container_name: caddy
+    restart: unless-stopped
+    depends_on:
+      gitea:
+        condition: service_started
+      sample-app:
+        condition: service_started
+    ports:
+      - "80:80"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /srv/data/caddy/data:/data
+      - /srv/data/caddy/config:/config
+    networks:
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD", "caddy", "validate", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  gitea:
+    image: gitea/gitea:1.25.5@sha256:f846d26a4fc389c5806a580a765e00bfdd1fd181e6f2060da98ea2669d914472
+    container_name: gitea
+    restart: unless-stopped
+    environment:
+      USER_UID: ${SERVICE_UID:-1000}
+      USER_GID: ${SERVICE_GID:-1000}
+      TZ: ${TZ:-Etc/UTC}
+      GITEA__database__DB_TYPE: sqlite3
+      GITEA__server__DOMAIN: ${GITEA_DOMAIN:-gitea}
+      GITEA__server__ROOT_URL: ${GITEA_ROOT_URL:-http://gitea/}
+      GITEA__server__SSH_DOMAIN: ${GITEA_SSH_DOMAIN:-gitea}
+      GITEA__server__SSH_PORT: ${GITEA_SSH_PORT:-2222}
+      GITEA__server__SSH_LISTEN_PORT: 22
+      GITEA__service__DISABLE_REGISTRATION: ${GITEA_DISABLE_REGISTRATION:-false}
+      GITEA__openid__ENABLE_OPENID_SIGNIN: "false"
+      GITEA__openid__ENABLE_OPENID_SIGNUP: "false"
+    ports:
+      - "${GITEA_SSH_PORT:-2222}:22"
+    volumes:
+      - /srv/data/gitea:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:3000/api/healthz || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+
+  jellyfin:
+    image: jellyfin/jellyfin:10.11.8@sha256:1694ff069f0c9dafb283c36765175606866769f5d72f2ed56b6a0f1be922fc37
+    container_name: jellyfin
+    restart: unless-stopped
+    user: "${SERVICE_UID:-1000}:${SERVICE_GID:-1000}"
+    environment:
+      TZ: ${TZ:-Etc/UTC}
+    ports:
+      - "8096:8096"
+      - "7359:7359/udp"
+    volumes:
+      - /srv/data/jellyfin/config:/config
+      - /srv/data/jellyfin/cache:/cache
+      - /srv/media:/media:ro
+    networks:
+      - frontend
+
+  sample-app:
+    build:
+      context: ./apps/sample-app
+    image: local/campsites-sample:0.1.0
+    container_name: sample-app
+    restart: unless-stopped
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3).read()"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  frontend:
+    name: homeserver_frontend
+  backend:
+    name: homeserver_backend

@@ -1,0 +1,23 @@
+; Reference template for the Gitea settings managed by compose/docker-compose.yml.
+; The running container writes the real app.ini under /srv/data/gitea.
+; Prefer changing /srv/compose/.env and Compose environment values first.
+
+[database]
+DB_TYPE = sqlite3
+
+[server]
+; bootstrap.sh writes these through /srv/compose/.env.
+; The day-1 default is the detected LAN IP so consumer-router LANs work
+; before local DNS exists. Use gitea or gitea.home.arpa only after DNS works.
+DOMAIN = <server-ip>
+ROOT_URL = http://<server-ip>/
+SSH_DOMAIN = <server-ip>
+SSH_PORT = 2222
+SSH_LISTEN_PORT = 22
+
+[service]
+DISABLE_REGISTRATION = false
+
+[openid]
+ENABLE_OPENID_SIGNIN = false
+ENABLE_OPENID_SIGNUP = false

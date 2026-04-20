@@ -1,0 +1,22 @@
+.DS_Store
+
+# Local operator config and secrets
+bootstrap/env
+bootstrap/*.pub
+compose/.env
+*.env
+*.env.local
+*.secret
+secrets/
+
+# Logs and runtime scratch
+*.log
+tmp/
+.tmp/
+__pycache__/
+*.pyc
+
+# Editor and tool caches
+.idea/
+.vscode/
+.cache/
