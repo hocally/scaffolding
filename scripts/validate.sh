@@ -70,6 +70,7 @@ fi
 
 GITEA_DOMAIN="${GITEA_DOMAIN:-gitea}"
 SAMPLE_DOMAIN="${SAMPLE_DOMAIN:-campsites}"
+RETRO_WAVEFORM_DOMAIN="${RETRO_WAVEFORM_DOMAIN:-retro-waveform}"
 
 check_dns_name() {
   local name="$1"
@@ -104,6 +105,7 @@ check_dns_or_report() {
 
 check_dns_or_report "${GITEA_DOMAIN}"
 check_dns_or_report "${SAMPLE_DOMAIN}"
+check_dns_or_report "${RETRO_WAVEFORM_DOMAIN}"
 
 curl_retry() {
   local description="$1"
@@ -138,6 +140,12 @@ if docker ps --format '{{.Names}}' | grep -qx jellyfin; then
   curl_retry "jellyfin public system info endpoint" http://127.0.0.1:8096/System/Info/Public
 else
   printf 'jellyfin is not running; skipped Jellyfin smoke test\n'
+fi
+
+if docker ps --format '{{.Names}}' | grep -qx retro-waveform; then
+  curl_retry "retro waveform route http://${RETRO_WAVEFORM_DOMAIN}" -H "Host: ${RETRO_WAVEFORM_DOMAIN}" http://127.0.0.1/api/v1/health/ready
+else
+  printf 'retro-waveform is not running; skipped Retro Waveform HTTP smoke test\n'
 fi
 
 printf 'validation complete\n'

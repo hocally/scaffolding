@@ -103,6 +103,23 @@ Commit the changed image pin and any operational notes.
 
 Before considering a new app done, add or update an acceptance test in `docs/acceptance-tests.md`.
 
+## Retro Waveform Control Plane
+
+Retro Waveform is optional and runs without hardware access in the initial Compose integration.
+Build its local image from the checked-out application repository, then enable only its profile:
+
+```bash
+cd ~/retro-waveform
+make image
+
+cd /srv/compose
+sudo docker compose --profile retro-waveform up -d retro-waveform
+```
+
+Use [compose/retro-waveform/README.md](../compose/retro-waveform/README.md) for the health
+check, update, and rollback commands. Do not add USB devices, host networking, PipeWire sockets,
+or `privileged` mode to this service until the hardware path has dedicated integration tests.
+
 ## Manual Host Changes
 
 Manual emergency changes are allowed, but backport them into this repo immediately. The repo should remain sufficient to rebuild the server from a clean Ubuntu install.

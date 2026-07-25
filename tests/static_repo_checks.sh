@@ -33,7 +33,7 @@ done
 
 OFFLINE=1 COMPOSE_DIR=compose ./scripts/validate.sh >/dev/null
 
-for service in caddy gitea jellyfin sample-app; do
+for service in caddy gitea jellyfin sample-app retro-waveform; do
   grep -q "^  ${service}:" compose/docker-compose.yml || {
     printf 'missing service: %s\n' "${service}" >&2
     exit 1
@@ -41,7 +41,7 @@ for service in caddy gitea jellyfin sample-app; do
 done
 
 restart_count="$(grep -c 'restart: unless-stopped' compose/docker-compose.yml)"
-if [[ "${restart_count}" -lt 4 ]]; then
+if [[ "${restart_count}" -lt 5 ]]; then
   printf 'expected restart policy on all services; found %s\n' "${restart_count}" >&2
   exit 1
 fi
@@ -80,6 +80,11 @@ awk '
 
 grep -q 'http://campsites' compose/caddy/Caddyfile
 grep -q 'handle_path /campsites' compose/caddy/Caddyfile
+grep -q 'http://retro-waveform' compose/caddy/Caddyfile
+grep -q 'handle_path /retro-waveform' compose/caddy/Caddyfile
+grep -q 'profiles:' compose/docker-compose.yml
+grep -q 'image: local/retro-waveform:0.1.0' compose/docker-compose.yml
+grep -q 'no USB devices' compose/retro-waveform/README.md
 grep -q 'ENABLE_MDNS=0' bootstrap/env.example
 grep -q 'DISABLE_LID_SLEEP=1' bootstrap/env.example
 grep -q 'GITEA_BOOTSTRAP=0' bootstrap/env.example

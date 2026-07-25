@@ -90,6 +90,24 @@ services:
       retries: 3
       start_period: 10s
 
+  retro-waveform:
+    image: local/retro-waveform:0.1.0
+    container_name: retro-waveform
+    restart: unless-stopped
+    profiles:
+      - retro-waveform
+    environment:
+      TZ: ${TZ:-Etc/UTC}
+      RETRO_WAVEFORM_SPOTIFY_STARTUP_ENABLED: "false"
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health/ready', timeout=3).read()"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
 networks:
   frontend:
     name: homeserver_frontend

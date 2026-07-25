@@ -11,6 +11,7 @@ The first-pass architecture is intentionally boring:
 - Gitea for personal Git hosting
 - Jellyfin for LAN media serving
 - one sample Flask app route at `http://campsites`, with an IP fallback at `http://<server-ip>/campsites`
+- an opt-in Retro Waveform control-plane route at `http://retro-waveform`
 
 Recommended approach: run the host with a stable LAN IP or DHCP reservation, then map simple LAN names such as `gitea` and `campsites` to that IP in your router or local DNS. Alternative: use the server IP for day 1 and add a real LAN DNS service later.
 
@@ -155,6 +156,7 @@ OFFLINE=1 COMPOSE_DIR=compose ./scripts/validate.sh
 | Gitea | `http://<server-ip>`, optionally `http://gitea`, and SSH on port `2222` | Uses SQLite by default for low operational overhead |
 | Jellyfin | `http://<server-ip>:8096` | Direct LAN access for media streaming |
 | Sample app | `http://campsites` or `http://<server-ip>/campsites` | Tiny Flask app that demonstrates the local app pattern |
+| Retro Waveform | `http://retro-waveform` or `http://<server-ip>/retro-waveform` | Opt-in hardware-safe radio control plane; see [compose/retro-waveform](compose/retro-waveform/README.md) |
 
 Day-2 work is tracked separately in [docs/day-2-wishlist.md](docs/day-2-wishlist.md). The top recommended follow-up is real backups with a restore test.
 
