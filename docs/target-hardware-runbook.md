@@ -39,6 +39,7 @@ Record:
 - DNS server IP
 - whether the router supports DHCP reservation
 - whether the router supports local DNS records or host overrides
+- Wi-Fi MAC address, if Wi-Fi is the primary connection
 
 Router note: most consumer routers can create DHCP reservations, but arbitrary local DNS records are not guaranteed. Treat IP-based access as the day-1 fallback until DNS behavior is proven on the actual LAN.
 
@@ -93,6 +94,8 @@ ENABLE_MDNS=1
 
 That should make the server reachable as `<server-hostname>.local` on clients that support mDNS. Do not expect a bare hostname to work without real DNS.
 
+For a laptop-style server, leave `DISABLE_LID_SLEEP=1`. Before relying on unattended recovery, set its firmware/BIOS `Restore on AC Power Loss` (or similarly named) option to `Power On` or `Last State`; this setting cannot be applied by Ubuntu.
+
 Leave `GITEA_ACCESS_HOST` blank unless local DNS already works. Blank means bootstrap will make Gitea advertise the detected LAN IP, which is the most reliable day-1 default.
 
 For a cleaner rebuild, fill the optional Gitea and Jellyfin bootstrap sections in `bootstrap/env` before running bootstrap. Both are one-time helpers: on success, bootstrap clears the admin password fields and flips the bootstrap flags back to `0`.
@@ -113,7 +116,7 @@ Recommended:
 
 ```text
 DHCP reservation:
-  <server-mac> -> <server-ip>
+  <active-network-mac> -> <server-ip>
 
 Local DNS:
   gitea     -> <server-ip>
@@ -178,6 +181,7 @@ Expected:
 - mDNS works as `<server-hostname>.local` if `ENABLE_MDNS=1`
 - strict DNS passes only if router/local-DNS records are available
 - host package versions are recorded at `/srv/compose/host-package-versions.txt`
+- Docker is enabled and starts after `network-online.target`
 
 If this fails, capture:
 

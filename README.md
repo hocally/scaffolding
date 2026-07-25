@@ -88,6 +88,8 @@ Persistent application state lives under `/srv/data`. Media lives under `/srv/me
 
 Container images are pinned by version tag and digest where they come from an external registry. Host apt packages are installed from Ubuntu and Docker repositories during bootstrap, then recorded in `/srv/compose/host-package-versions.txt`; they are intentionally not hard-pinned on day 1 because that would add package mirror/version maintenance before the server has proven itself.
 
+By default, bootstrap also configures systemd-logind so closing a laptop lid does not suspend the server. Recommended: leave `DISABLE_LID_SLEEP=1` in `bootstrap/env` for headless or tucked-away hardware. Alternative: set `DISABLE_LID_SLEEP=0` before bootstrap if you want Ubuntu's default lid behavior.
+
 ## Quick Start On The Server
 
 Run these commands on the Ubuntu Server host, not on a laptop:
@@ -105,6 +107,14 @@ After bootstrap, review `/srv/compose/.env`, then validate:
 ```bash
 COMPOSE_DIR=/srv/compose ./scripts/validate.sh
 ```
+
+To confirm the lid policy on the server:
+
+```bash
+systemd-analyze cat-config systemd/logind.conf | grep -E '^[[:space:]]*HandleLidSwitch(ExternalPower|Docked)?='
+```
+
+Expected result: all three values are `ignore`.
 
 For a cleaner rebuild, `bootstrap/env` can also automate Gitea first-run setup:
 

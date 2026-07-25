@@ -23,6 +23,7 @@ SERVER_USER="$(detect_server_user)"
 SERVER_GROUP="${SERVER_GROUP:-$(id -gn "${SERVER_USER}")}"
 SERVER_HOSTNAME="${SERVER_HOSTNAME:-$(hostname -s)}"
 ENABLE_MDNS="${ENABLE_MDNS:-0}"
+DISABLE_LID_SLEEP="${DISABLE_LID_SLEEP:-1}"
 SERVICE_UID="$(id -u "${SERVER_USER}")"
 SERVICE_GID="$(id -g "${SERVER_USER}")"
 TZ="${TZ:-Etc/UTC}"
@@ -65,6 +66,7 @@ print_commissioning_summary() {
   printf '  default gateway: %s\n' "${LAN_GATEWAY:-unknown}"
   printf '  compose target: %s\n' "${COMPOSE_TARGET_DIR}"
   printf '  mDNS name: %s\n' "$(if [[ "${ENABLE_MDNS}" == "1" ]]; then printf '%s.local' "${SERVER_HOSTNAME}"; else printf 'disabled'; fi)"
+  printf '  lid sleep disabled: %s\n' "$(if [[ "${DISABLE_LID_SLEEP}" == "1" ]]; then printf 'yes'; else printf 'no'; fi)"
   printf '  Gitea bootstrap: %s\n' "$(if [[ "${GITEA_BOOTSTRAP}" == "1" ]]; then printf 'enabled'; else printf 'disabled'; fi)"
   printf '  Jellyfin bootstrap: %s\n' "$(if [[ "${JELLYFIN_BOOTSTRAP}" == "1" ]]; then printf 'enabled'; else printf 'disabled'; fi)"
   printf '\n'
@@ -83,10 +85,17 @@ install_host_packages() {
   DEBIAN_FRONTEND=noninteractive apt-get install -y \
     ca-certificates \
     curl \
+    dnsutils \
+    ethtool \
     git \
     gnupg \
+    iproute2 \
+    iputils-ping \
+    iw \
     lsb-release \
-    rsync || die_action "failed to install host prerequisites" "inspect apt output above, fix package manager errors, then rerun bootstrap"
+    mtr-tiny \
+    rsync \
+    traceroute || die_action "failed to install host prerequisites" "inspect apt output above, fix package manager errors, then rerun bootstrap"
 }
 
 configure_mdns() {
@@ -105,31 +114,56 @@ configure_mdns() {
   systemctl enable --now avahi-daemon || die_action "failed to enable or start avahi-daemon" "check: systemctl status avahi-daemon"
 }
 
-install_docker() {
-  if have_cmd docker && docker compose version >/dev/null 2>&1; then
-    log "Docker Engine and Compose plugin already available"
+configure_lid_sleep() {
+  local lid_conf="/etc/systemd/logind.conf.d/10-home-server-lid.conf"
+
+  if [[ "${DISABLE_LID_SLEEP}" != "1" ]]; then
+    if [[ -f "${lid_conf}" ]]; then
+      log "DISABLE_LID_SLEEP=${DISABLE_LID_SLEEP}; removing home server lid policy"
+      rm -f "${lid_conf}"
+      systemctl restart systemd-logind || die_action "failed to restart systemd-logind after removing lid policy" "check: systemctl status systemd-logind"
+    else
+      log "DISABLE_LID_SLEEP=${DISABLE_LID_SLEEP}; leaving systemd-logind lid behavior unchanged"
+    fi
     return
   fi
 
-  log "installing Docker Engine from Docker's official apt repository"
-  install -m 0755 -d /etc/apt/keyrings
-  curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc || die_action "failed to download Docker apt signing key" "verify the server can reach https://download.docker.com, then rerun bootstrap"
-  chmod a+r /etc/apt/keyrings/docker.asc
+  log "configuring systemd-logind to ignore lid close events"
+  install -d -m 0755 /etc/systemd/logind.conf.d
+  cat > "${lid_conf}" <<'EOF'
+[Login]
+HandleLidSwitch=ignore
+HandleLidSwitchExternalPower=ignore
+HandleLidSwitchDocked=ignore
+EOF
 
-  local codename
-  codename="$(. /etc/os-release && printf '%s' "${VERSION_CODENAME}")"
+  systemctl restart systemd-logind || die_action "failed to restart systemd-logind after lid policy update" "check: systemctl status systemd-logind"
+}
 
-  printf 'deb [arch=%s signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu %s stable\n' \
-    "$(dpkg --print-architecture)" \
-    "${codename}" > /etc/apt/sources.list.d/docker.list
+install_docker() {
+  if have_cmd docker && docker compose version >/dev/null 2>&1; then
+    log "Docker Engine and Compose plugin already available"
+  else
+    log "installing Docker Engine from Docker's official apt repository"
+    install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc || die_action "failed to download Docker apt signing key" "verify the server can reach https://download.docker.com, then rerun bootstrap"
+    chmod a+r /etc/apt/keyrings/docker.asc
 
-  apt-get update || die_action "apt-get update failed after adding Docker repository" "check /etc/apt/sources.list.d/docker.list and internet connectivity, then rerun bootstrap"
-  DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    docker-ce \
-    docker-ce-cli \
-    containerd.io \
-    docker-buildx-plugin \
-    docker-compose-plugin || die_action "failed to install Docker Engine or Compose plugin" "inspect apt output above, then rerun bootstrap after fixing package errors"
+    local codename
+    codename="$(. /etc/os-release && printf '%s' "${VERSION_CODENAME}")"
+
+    printf 'deb [arch=%s signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu %s stable\n' \
+      "$(dpkg --print-architecture)" \
+      "${codename}" > /etc/apt/sources.list.d/docker.list
+
+    apt-get update || die_action "apt-get update failed after adding Docker repository" "check /etc/apt/sources.list.d/docker.list and internet connectivity, then rerun bootstrap"
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+      docker-ce \
+      docker-ce-cli \
+      containerd.io \
+      docker-buildx-plugin \
+      docker-compose-plugin || die_action "failed to install Docker Engine or Compose plugin" "inspect apt output above, then rerun bootstrap after fixing package errors"
+  fi
 
   systemctl enable --now docker || die_action "failed to enable or start Docker" "check: systemctl status docker"
 }
@@ -354,14 +388,21 @@ write_host_manifest() {
         ca-certificates \
         containerd.io \
         curl \
+        dnsutils \
+        ethtool \
         docker-buildx-plugin \
         docker-ce \
         docker-ce-cli \
         docker-compose-plugin \
         git \
         gnupg \
+        iproute2 \
+        iputils-ping \
+        iw \
         lsb-release \
-        rsync 2>/dev/null || true
+        mtr-tiny \
+        rsync \
+        traceroute 2>/dev/null || true
     } | sort
   } > "${manifest}"
 
@@ -649,6 +690,7 @@ main() {
   print_commissioning_summary
   install_host_packages
   configure_mdns
+  configure_lid_sleep
   install_docker
   create_srv_layout
   install_compose_bundle

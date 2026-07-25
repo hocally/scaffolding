@@ -145,6 +145,8 @@ This day-1 repo does not require public internet exposure for Jellyfin. Outside-
 
 ## Power Loss Test
 
+Before this test, configure the machine firmware/BIOS option usually named `Restore on AC Power Loss`, `AC Back`, or `After Power Failure` to `Power On` (or `Last State`). Verify this manually: software cannot override firmware power-recovery behavior. A UPS is the recommended future protection for repeated outages and graceful shutdown; it is not implemented in this day-1 baseline.
+
 Unplug the server, wait 30 seconds, and plug it back in.
 
 After the machine has had enough time to boot, test from a laptop first:
@@ -170,6 +172,7 @@ http://<server-ip>/campsites
 Expected result:
 
 - Docker starts on boot
+- Docker waits for the network-online target before starting
 - Caddy, Gitea, Jellyfin, and the sample app restart automatically
 - routes work without SSHing into the server or manually starting anything
 

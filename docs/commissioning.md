@@ -16,6 +16,8 @@ The bootstrap script detects the hostname set during Ubuntu installation. You do
 
 If you want an mDNS name such as `<server-hostname>.local`, set `SERVER_HOSTNAME=<server-hostname>` and `ENABLE_MDNS=1` in `bootstrap/env` before running bootstrap.
 
+By default, bootstrap sets `DISABLE_LID_SLEEP=1`, which makes systemd-logind ignore laptop lid-close events. Recommended: keep this for a home server that may run closed. Alternative: set `DISABLE_LID_SLEEP=0` before bootstrap if you want the machine to suspend when the lid closes.
+
 ## Steps
 
 1. Install Ubuntu Server 24.04 LTS.
@@ -81,6 +83,7 @@ campsites  -> <server-ip>
 
 ```bash
 COMPOSE_DIR=/srv/compose ~/scaffolding/scripts/validate.sh
+systemd-analyze cat-config systemd/logind.conf | grep -E '^[[:space:]]*HandleLidSwitch(ExternalPower|Docked)?='
 ```
 
 Only run strict DNS validation after local DNS records exist:
@@ -90,6 +93,8 @@ STRICT_DNS=1 COMPOSE_DIR=/srv/compose ~/scaffolding/scripts/validate.sh
 ```
 
 12. Run the acceptance tests in `docs/acceptance-tests.md`.
+
+For the lid policy check, the expected result is that all three `HandleLidSwitch` values are `ignore`. After bootstrap, close the lid for a minute from another LAN client and confirm SSH still responds.
 
 ## First Gitea Login
 

@@ -81,12 +81,25 @@ awk '
 grep -q 'http://campsites' compose/caddy/Caddyfile
 grep -q 'handle_path /campsites' compose/caddy/Caddyfile
 grep -q 'ENABLE_MDNS=0' bootstrap/env.example
+grep -q 'DISABLE_LID_SLEEP=1' bootstrap/env.example
 grep -q 'GITEA_BOOTSTRAP=0' bootstrap/env.example
 grep -q 'GITEA_ADMIN_EMAIL=' bootstrap/env.example
 grep -q 'GITEA_ADMIN_PASSWORD=' bootstrap/env.example
 grep -q 'JELLYFIN_BOOTSTRAP=0' bootstrap/env.example
 grep -q 'JELLYFIN_ADMIN_PASSWORD=' bootstrap/env.example
 grep -q 'avahi-daemon' bootstrap/bootstrap.sh
+grep -q 'dnsutils' bootstrap/bootstrap.sh
+grep -q 'ethtool' bootstrap/bootstrap.sh
+grep -q 'iputils-ping' bootstrap/bootstrap.sh
+grep -q 'iw' bootstrap/bootstrap.sh
+grep -q 'mtr-tiny' bootstrap/bootstrap.sh
+grep -q 'traceroute' bootstrap/bootstrap.sh
+grep -q 'HandleLidSwitch=ignore' bootstrap/bootstrap.sh
+grep -q 'systemctl enable --now docker' bootstrap/bootstrap.sh
+! grep -R "loginctl show-logind" README.md docs
+grep -q 'systemd-analyze cat-config systemd/logind.conf' README.md
+grep -q 'systemd-analyze cat-config systemd/logind.conf' docs/commissioning.md
+grep -q 'systemd-analyze cat-config systemd/logind.conf' docs/operations.md
 grep -q 'bootstrap_gitea_admin' bootstrap/bootstrap.sh
 grep -q 'bootstrap_jellyfin' bootstrap/bootstrap.sh
 grep -q '/Startup/User' bootstrap/bootstrap.sh

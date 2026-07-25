@@ -33,6 +33,28 @@ Network diagnostics:
 ./scripts/network-info.sh
 ```
 
+Check laptop lid policy:
+
+```bash
+systemd-analyze cat-config systemd/logind.conf | grep -E '^[[:space:]]*HandleLidSwitch(ExternalPower|Docked)?='
+```
+
+Expected result: all three values are `ignore`. If you intentionally want lid close to suspend again, set `DISABLE_LID_SLEEP=0` in `bootstrap/env` and rerun bootstrap.
+
+Check boot and Wi-Fi recovery policy:
+
+```bash
+systemctl cat docker.service
+systemctl is-enabled docker
+systemctl is-active docker
+ip -4 route
+resolvectl status
+```
+
+Expected: the Docker unit declares `Wants=` and `After=` for `network-online.target`, Docker is `enabled` and `active`, and the host has a default route and DNS servers.
+
+The bootstrap-installed networking diagnostics are `ip`, `iw`, `ethtool`, `ping`, `dig`, `mtr`, and `traceroute`. Wi-Fi credentials remain in Ubuntu's host-specific Netplan configuration and are not stored in this repository.
+
 Restart one service:
 
 ```bash

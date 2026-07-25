@@ -156,3 +156,24 @@ ssh -p 2222 git@gitea
 ```
 
 The SSH command may fail authentication before keys are configured; that still proves the port is reachable.
+
+## Wi-Fi Reconnection and Diagnostics
+
+Wi-Fi credentials and interface names are intentionally not stored in this repository: they are host-specific secrets managed by Ubuntu Netplan. Once the host has joined the new Wi-Fi network, create a DHCP reservation for its Wi-Fi MAC address, not an old Ethernet MAC address.
+
+Bootstrap installs the small diagnostic set used for troubleshooting: `iproute2`, `iw`, `ethtool`, `iputils-ping`, `dnsutils`, `mtr-tiny`, and `traceroute`. Docker's packaged systemd unit starts after `network-online.target`, and bootstrap ensures Docker is enabled; the existing Compose restart policies then restore the services after a normal reboot or Wi-Fi reconnection.
+
+Run these commands on the server after joining the network and again after a reboot:
+
+```bash
+ip -br link
+ip -4 route
+iw dev
+resolvectl status
+ping -c 3 <router-ip>
+dig +short gitea
+systemctl is-enabled docker
+systemctl is-active docker
+```
+
+Expected: the Wi-Fi interface has the reserved address, a default route and DNS servers are present, and Docker is `enabled` and `active`. Use `mtr -rw <router-ip>` or `traceroute <router-ip>` only when diagnosing an actual reachability problem.
