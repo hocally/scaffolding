@@ -36,13 +36,7 @@ Validate on the server:
 COMPOSE_DIR=/srv/compose ./scripts/validate.sh
 ```
 
-After router DNS is configured:
-
-```bash
-STRICT_DNS=1 COMPOSE_DIR=/srv/compose ./scripts/validate.sh
-```
-
-If the router cannot provide local DNS records, strict DNS is not required for day 1. The IP-based fallback route must still work.
+`mainframe.local` is mDNS, not router DNS; strict DNS validation is not required for the standard layout. The IP-based fallback route must still work.
 
 ## LAN Client Tests
 
@@ -51,40 +45,44 @@ From a laptop on the same LAN:
 ```bash
 curl -fsS http://<server-ip>/campsites
 curl -I http://<server-ip>
+curl -I http://<server-ip>/gitea/
 ssh -p 2222 git@<server-ip>
 ```
 
 Expected result:
 
 - `http://<server-ip>/campsites` loads the sample Flask app
-- `http://<server-ip>` returns the Gitea UI or setup page
+- `http://<server-ip>` returns the Mainframe dashboard
+- `http://<server-ip>/gitea/` returns the Gitea UI or setup page
 - SSH reaches Gitea via `<server-ip>` on port `2222`; authentication may fail until keys are configured
 
-If local DNS exists, also test:
+With the standard mDNS configuration, also test:
 
 ```bash
-curl -fsS http://campsites/healthz
-curl -I http://gitea
-ssh -p 2222 git@gitea
+curl -fsS http://mainframe.local/campsites/healthz
+curl -I http://mainframe.local
+curl -I http://mainframe.local/gitea/
+ssh -p 2222 git@mainframe.local
 ```
 
 Expected result:
 
-- `http://campsites/healthz` returns JSON with `status: ok`
-- `http://gitea` returns the Gitea UI or setup page
-- SSH reaches Gitea via `gitea`
+- `http://mainframe.local/campsites/healthz` returns JSON with `status: ok`
+- `http://mainframe.local` returns the Mainframe dashboard
+- `http://mainframe.local/gitea/` returns the Gitea UI or setup page
+- SSH reaches Gitea via `mainframe.local`
 
 From a phone on Wi-Fi:
 
 ```text
-http://<server-ip>/campsites
-http://<server-ip>:8096
+http://mainframe.local/campsites
+http://mainframe.local:8096
 ```
 
 In the Jellyfin mobile app, add the server manually as:
 
 ```text
-http://<server-ip>:8096
+http://mainframe.local:8096
 ```
 
 Expected result:
@@ -93,18 +91,12 @@ Expected result:
 - Jellyfin loads; if automated bootstrap was used, sign in with the configured admin user and confirm the default libraries are present
 - the Jellyfin mobile app connects when given the full `http://` URL with port `8096`
 
-If local DNS is configured, also test:
-
-```text
-http://campsites
-```
-
 ## Gitea Clone Test
 
 After Gitea first-run setup and SSH key configuration:
 
 ```bash
-git clone ssh://git@<server-ip>:2222/<owner>/<repo>.git
+git clone ssh://git@mainframe.local:2222/<owner>/<repo>.git
 ```
 
 Expected result:
@@ -115,18 +107,12 @@ Expected result:
 
 Port `2222` is intentional. It avoids fighting the host's normal SSH service on port `22`.
 
-If local DNS exists, also test:
-
-```bash
-git clone ssh://git@gitea:2222/<owner>/<repo>.git
-```
-
 ## Jellyfin Test
 
 From a laptop browser:
 
 ```text
-http://<server-ip>:8096
+http://mainframe.local:8096
 ```
 
 Expected result:
@@ -137,7 +123,7 @@ Expected result:
 
 From a Jellyfin mobile or TV app on the same LAN:
 
-- connect to `http://<server-ip>:8096`
+- connect to `http://mainframe.local:8096`
 - sign in with the Jellyfin admin or test user
 - play a small test media file
 
@@ -156,17 +142,17 @@ curl -fsS http://<server-ip>/campsites
 curl -I http://<server-ip>
 ```
 
-If local DNS exists, also test:
+With the standard mDNS configuration, also test:
 
 ```bash
-curl -fsS http://campsites/healthz
-curl -I http://gitea
+curl -fsS http://mainframe.local/campsites/healthz
+curl -I http://mainframe.local/gitea/
 ```
 
 Then test from a phone on Wi-Fi:
 
 ```text
-http://<server-ip>/campsites
+http://mainframe.local/campsites
 ```
 
 Expected result:

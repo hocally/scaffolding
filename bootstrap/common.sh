@@ -147,6 +147,20 @@ resolve_operator_path() {
   fi
 }
 
+gitea_access_host() {
+  if [[ -n "${GITEA_ACCESS_HOST}" ]]; then
+    printf '%s\n' "${GITEA_ACCESS_HOST}"
+  elif [[ "${ENABLE_MDNS}" == "1" ]]; then
+    printf '%s.local\n' "${SERVER_HOSTNAME}"
+  else
+    printf '%s\n' "${LAN_IP}"
+  fi
+}
+
+gitea_root_url() {
+  printf 'http://%s/gitea/\n' "$1"
+}
+
 valid_gitea_repo_name() {
   local name="$1"
 

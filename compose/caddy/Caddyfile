@@ -16,13 +16,28 @@ http://retro-waveform {
 }
 
 :80 {
-	handle_path /campsites* {
+	@gitea path /gitea /gitea/*
+	handle @gitea {
+		uri strip_prefix /gitea
+		reverse_proxy gitea:3000
+	}
+
+	@campsites path /campsites /campsites/*
+	handle @campsites {
+		uri strip_prefix /campsites
 		reverse_proxy sample-app:8000
 	}
 
-	handle_path /retro-waveform* {
+	@retro_waveform path /retro-waveform /retro-waveform/*
+	handle @retro_waveform {
+		uri strip_prefix /retro-waveform
 		reverse_proxy retro-waveform:8000
 	}
 
-	reverse_proxy gitea:3000
+	handle {
+		header Cache-Control "no-store"
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
 }

@@ -62,6 +62,12 @@ cd /srv/compose
 sudo docker compose up -d gitea
 ```
 
+## Mainframe Dashboard
+
+The Caddy default route serves the static service dashboard at `http://mainframe.local`. It links to Gitea at `/gitea/`, the sample app at `/campsites`, the optional Retro Waveform app at `/retro-waveform`, and Jellyfin at port `8096` on the hostname currently used in the browser.
+
+The dashboard is intentionally static and served by Caddy; it adds no application runtime, database, or JavaScript dependency. Keep the host LAN-only.
+
 Stop all services:
 
 ```bash
@@ -92,16 +98,14 @@ sudo docker compose logs --tail 100 <service>
 
 Commit the changed image pin and any operational notes.
 
-## Adding A Local App
+## Adding A Container
 
-1. Add a service to `compose/docker-compose.yml`.
-2. Keep it on the `backend` network unless it truly needs direct LAN exposure.
-3. Store persistent state under `/srv/data/apps/<app-name>`.
-4. Add a route to `compose/caddy/Caddyfile`.
-5. Add a local DNS record.
-6. Run validation.
+Use [the container integration guide](container-integration.md) for every new
+Compose-managed application. It covers service and state design, pinned images,
+secrets, Caddy and dashboard integration, validation, deployment, and rollback.
 
-Before considering a new app done, add or update an acceptance test in `docs/acceptance-tests.md`.
+Before considering a new app done, add or update an acceptance test in
+`docs/acceptance-tests.md`.
 
 ## Retro Waveform Control Plane
 

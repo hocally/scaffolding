@@ -8,13 +8,18 @@ These steps are for the actual Ubuntu Server 24.04 LTS machine.
 - The server uses Ethernet.
 - The operator account can use `sudo`.
 - The server has a stable LAN IP, preferably via DHCP reservation.
-- Local DNS may map `gitea` and `campsites` to the server IP, but the day-1 flow also works with IP-based fallback URLs.
+- mDNS makes the server available as `mainframe.local`; the day-1 flow also works with IP-based fallback URLs.
 
-Recommended network approach: configure a DHCP reservation on the router and add local DNS records if the router supports them. Alternative: use the server IP for day 1 and add LAN DNS later.
+Recommended network approach: configure a DHCP reservation on the router and set `SERVER_HOSTNAME=mainframe` with `ENABLE_MDNS=1`. This gives LAN clients `mainframe.local` without making the server a network-wide DNS dependency. Alternative: use the server IP for day 1 and add LAN DNS later.
 
 The bootstrap script detects the hostname set during Ubuntu installation. You do not need to duplicate that in this repo unless you want to override it in `bootstrap/env`.
 
-If you want an mDNS name such as `<server-hostname>.local`, set `SERVER_HOSTNAME=<server-hostname>` and `ENABLE_MDNS=1` in `bootstrap/env` before running bootstrap.
+For the standard Mainframe layout, set the following in `bootstrap/env` before running bootstrap:
+
+```text
+SERVER_HOSTNAME=mainframe
+ENABLE_MDNS=1
+```
 
 By default, bootstrap sets `DISABLE_LID_SLEEP=1`, which makes systemd-logind ignore laptop lid-close events. Recommended: keep this for a home server that may run closed. Alternative: set `DISABLE_LID_SLEEP=0` before bootstrap if you want the machine to suspend when the lid closes.
 
@@ -64,41 +69,30 @@ sudo ./bootstrap/bootstrap.sh
 sudoedit /srv/compose/.env
 ```
 
-By default, bootstrap sets Gitea's advertised HTTP and SSH host to the detected LAN IP. If local DNS is already working and you prefer a name, set `GITEA_ACCESS_HOST` in `bootstrap/env` before bootstrap or edit `/srv/compose/.env` afterward.
+With `ENABLE_MDNS=1`, bootstrap sets Gitea's advertised URL to `http://mainframe.local/gitea/` and its SSH host to `mainframe.local`. Without mDNS, it uses the detected LAN IP at `/gitea/`. Set `GITEA_ACCESS_HOST` only when using a different LAN name that already resolves.
 
 If `GITEA_BOOTSTRAP=1` or `JELLYFIN_BOOTSTRAP=1`, bootstrap performs those first-run setup steps after the Compose stack starts. On success, it clears the corresponding one-time identity/password fields in `bootstrap/env` and disables that bootstrap flag so reruns are safe.
 
-If mDNS is enabled, `http://<server-hostname>.local`, `http://<server-hostname>.local/campsites`, and `http://<server-hostname>.local:8096` should work on clients that support mDNS.
+If mDNS is enabled, `http://mainframe.local`, `http://mainframe.local/gitea/`, `http://mainframe.local/campsites`, and `http://mainframe.local:8096` should work on clients that support mDNS.
 
 9. Add a DHCP reservation in the router for the detected server IP.
 
-10. If the router supports local DNS records, add:
-
-```text
-gitea      -> <server-ip>
-campsites  -> <server-ip>
-```
-
-11. Validate:
+10. Validate:
 
 ```bash
 COMPOSE_DIR=/srv/compose ~/scaffolding/scripts/validate.sh
 systemd-analyze cat-config systemd/logind.conf | grep -E '^[[:space:]]*HandleLidSwitch(ExternalPower|Docked)?='
 ```
 
-Only run strict DNS validation after local DNS records exist:
+Run the strict DNS validation only after deliberately configuring router-provided local DNS records; it is not needed for `mainframe.local` mDNS.
 
-```bash
-STRICT_DNS=1 COMPOSE_DIR=/srv/compose ~/scaffolding/scripts/validate.sh
-```
-
-12. Run the acceptance tests in `docs/acceptance-tests.md`.
+11. Run the acceptance tests in `docs/acceptance-tests.md`.
 
 For the lid policy check, the expected result is that all three `HandleLidSwitch` values are `ignore`. After bootstrap, close the lid for a minute from another LAN client and confirm SSH still responds.
 
 ## First Gitea Login
 
-Open `http://<server-ip>` or `http://gitea`, complete the first-run setup, and create the first user. Then disable open registration:
+Open `http://mainframe.local/gitea/` (or `http://<server-ip>/gitea/` if mDNS is disabled), complete the first-run setup, and create the first user. Then disable open registration:
 
 ```bash
 sudoedit /srv/compose/.env

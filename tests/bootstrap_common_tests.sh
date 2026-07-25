@@ -68,6 +68,20 @@ assert_success "JELLYFIN_BOOTSTRAP is disabled" grep -qx 'JELLYFIN_BOOTSTRAP=0' 
 assert_equal "/repo/bootstrap/key.pub" "$(resolve_operator_path "/repo" "bootstrap/key.pub")" "relative paths are resolved from the provided base"
 assert_equal "/home/operator/.ssh/id.pub" "$(resolve_operator_path "/repo" "/home/operator/.ssh/id.pub")" "absolute paths are preserved"
 
+GITEA_ACCESS_HOST=""
+ENABLE_MDNS=1
+SERVER_HOSTNAME=mainframe
+LAN_IP=203.0.113.27
+assert_equal "mainframe.local" "$(gitea_access_host)" "mDNS hostname is Gitea's default public host"
+assert_equal "http://mainframe.local/gitea/" "$(gitea_root_url "$(gitea_access_host)")" "mDNS Gitea root URL uses the dashboard path"
+
+GITEA_ACCESS_HOST="git.home.arpa"
+assert_equal "git.home.arpa" "$(gitea_access_host)" "explicit Gitea public host overrides mDNS"
+
+GITEA_ACCESS_HOST=""
+ENABLE_MDNS=0
+assert_equal "203.0.113.27" "$(gitea_access_host)" "LAN IP is used when mDNS is disabled"
+
 assert_success "simple repo name is valid" valid_gitea_repo_name "notes"
 assert_success "dotted repo name is valid" valid_gitea_repo_name "home.server"
 assert_failure "repo name cannot start with dot" valid_gitea_repo_name ".hidden"

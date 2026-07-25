@@ -57,6 +57,7 @@ Recommended approach: run the host with a stable LAN IP or DHCP reservation, the
 │   ├── acceptance-tests.md
 │   ├── backup-plan.md
 │   ├── commissioning.md
+│   ├── container-integration.md
 │   ├── day-2-wishlist.md
 │   ├── network.md
 │   ├── operations.md
@@ -152,13 +153,16 @@ OFFLINE=1 COMPOSE_DIR=compose ./scripts/validate.sh
 
 | Service | Access | Notes |
 | --- | --- | --- |
+| Mainframe dashboard | `http://mainframe.local` | LAN service directory (requires the configured mDNS hostname) |
 | Caddy | `http://<server-ip>`, `http://gitea`, `http://campsites` | Plain HTTP LAN reverse proxy |
-| Gitea | `http://<server-ip>`, optionally `http://gitea`, and SSH on port `2222` | Uses SQLite by default for low operational overhead |
+| Gitea | `http://mainframe.local/gitea/` and SSH on port `2222` | Uses SQLite by default for low operational overhead |
 | Jellyfin | `http://<server-ip>:8096` | Direct LAN access for media streaming |
 | Sample app | `http://campsites` or `http://<server-ip>/campsites` | Tiny Flask app that demonstrates the local app pattern |
 | Retro Waveform | `http://retro-waveform` or `http://<server-ip>/retro-waveform` | Opt-in hardware-safe radio control plane; see [compose/retro-waveform](compose/retro-waveform/README.md) |
 
 Day-2 work is tracked separately in [docs/day-2-wishlist.md](docs/day-2-wishlist.md). The top recommended follow-up is real backups with a restore test.
+
+To add another Compose-managed service, follow the [container integration guide](docs/container-integration.md).
 
 ## Secrets And Operator-Supplied Values
 

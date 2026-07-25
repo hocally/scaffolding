@@ -79,12 +79,23 @@ awk '
 ' compose/apps/sample-app/requirements.txt
 
 grep -q 'http://campsites' compose/caddy/Caddyfile
-grep -q 'handle_path /campsites' compose/caddy/Caddyfile
+grep -q '@campsites path /campsites /campsites/\*' compose/caddy/Caddyfile
 grep -q 'http://retro-waveform' compose/caddy/Caddyfile
-grep -q 'handle_path /retro-waveform' compose/caddy/Caddyfile
+grep -q '@retro_waveform path /retro-waveform /retro-waveform/\*' compose/caddy/Caddyfile
+grep -q '@gitea path /gitea /gitea/\*' compose/caddy/Caddyfile
+grep -q 'uri strip_prefix /gitea' compose/caddy/Caddyfile
+grep -q 'file_server' compose/caddy/Caddyfile
+grep -q './caddy/site:/srv:ro' compose/docker-compose.yml
+grep -q 'Mainframe' compose/caddy/site/index.html
+grep -q 'data-service-port="8096"' compose/caddy/site/index.html
+test -f docs/container-integration.md
+grep -q 'restart: unless-stopped' docs/container-integration.md
+grep -q 'http://mainframe.local/example-app' docs/container-integration.md
+grep -q -- '--force-recreate caddy' docs/container-integration.md
+grep -q 'GITEA_ROOT_URL=http://mainframe.local/gitea/' compose/.env.example
 grep -q 'profiles:' compose/docker-compose.yml
 grep -q 'image: local/retro-waveform:0.1.0' compose/docker-compose.yml
-grep -q 'no USB devices' compose/retro-waveform/README.md
+grep -q 'does not receive USB devices' compose/retro-waveform/README.md
 grep -q 'ENABLE_MDNS=0' bootstrap/env.example
 grep -q 'DISABLE_LID_SLEEP=1' bootstrap/env.example
 grep -q 'GITEA_BOOTSTRAP=0' bootstrap/env.example
@@ -107,6 +118,9 @@ grep -q 'systemd-analyze cat-config systemd/logind.conf' docs/commissioning.md
 grep -q 'systemd-analyze cat-config systemd/logind.conf' docs/operations.md
 grep -q 'bootstrap_gitea_admin' bootstrap/bootstrap.sh
 grep -q 'bootstrap_jellyfin' bootstrap/bootstrap.sh
+grep -q 'gitea_access_host()' bootstrap/common.sh
+grep -q "printf '%s.local" bootstrap/common.sh
+grep -q 'GITEA_ROOT_URL.*gitea' bootstrap/bootstrap.sh
 grep -q '/Startup/User' bootstrap/bootstrap.sh
 grep -q '/Library/VirtualFolders' bootstrap/bootstrap.sh
 

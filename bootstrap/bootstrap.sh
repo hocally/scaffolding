@@ -72,9 +72,10 @@ print_commissioning_summary() {
   printf '\n'
   printf 'Router task after bootstrap:\n'
   printf '  1. Create a DHCP reservation for this machine at %s.\n' "${LAN_IP:-the detected server IP}"
-  printf '  2. Add local DNS records: gitea -> %s, campsites -> %s.\n' "${LAN_IP:-server IP}" "${LAN_IP:-server IP}"
   if [[ "${ENABLE_MDNS}" == "1" ]]; then
-    printf '  3. If bare DNS names are unavailable, try mDNS: http://%s.local\n' "${SERVER_HOSTNAME}"
+    printf '  2. Open the mDNS dashboard: http://%s.local\n' "${SERVER_HOSTNAME}"
+  else
+    printf '  2. Use the dashboard by IP: http://%s\n' "${LAN_IP:-server IP}"
   fi
   printf '\n'
 }
@@ -227,7 +228,10 @@ create_srv_layout() {
 
 install_compose_bundle() {
   log "syncing compose bundle to ${COMPOSE_TARGET_DIR}"
-  local gitea_access_host="${GITEA_ACCESS_HOST:-${LAN_IP}}"
+  local gitea_access_host
+  gitea_access_host="$(gitea_access_host)"
+  local gitea_root_url
+  gitea_root_url="$(gitea_root_url "${gitea_access_host}")"
 
   if [[ -z "${gitea_access_host}" ]]; then
     die_action "cannot determine Gitea access host" "set GITEA_ACCESS_HOST in bootstrap/env or fix IPv4 detection"
@@ -247,7 +251,7 @@ install_compose_bundle() {
     set_env_value "${COMPOSE_TARGET_DIR}/.env" "SERVICE_UID" "${SERVICE_UID}"
     set_env_value "${COMPOSE_TARGET_DIR}/.env" "SERVICE_GID" "${SERVICE_GID}"
     set_env_value "${COMPOSE_TARGET_DIR}/.env" "GITEA_DOMAIN" "${gitea_access_host}"
-    set_env_value "${COMPOSE_TARGET_DIR}/.env" "GITEA_ROOT_URL" "http://${gitea_access_host}/"
+    set_env_value "${COMPOSE_TARGET_DIR}/.env" "GITEA_ROOT_URL" "${gitea_root_url}"
     set_env_value "${COMPOSE_TARGET_DIR}/.env" "GITEA_SSH_DOMAIN" "${gitea_access_host}"
     chown "${SERVER_USER}:${SERVER_GROUP}" "${COMPOSE_TARGET_DIR}/.env"
     chmod 0640 "${COMPOSE_TARGET_DIR}/.env"
@@ -274,7 +278,10 @@ render_gitea_app_ini() {
     return
   fi
 
-  local gitea_access_host="${GITEA_ACCESS_HOST:-${LAN_IP}}"
+  local gitea_access_host
+  gitea_access_host="$(gitea_access_host)"
+  local gitea_root_url
+  gitea_root_url="$(gitea_root_url "${gitea_access_host}")"
   local gitea_ssh_port="${GITEA_SSH_PORT:-2222}"
 
   log "preseeding Gitea app.ini for non-interactive first start"
@@ -299,7 +306,7 @@ APP_DATA_PATH = /data/gitea
 DOMAIN = ${gitea_access_host}
 SSH_DOMAIN = ${gitea_access_host}
 HTTP_PORT = 3000
-ROOT_URL = http://${gitea_access_host}/
+ROOT_URL = ${gitea_root_url}
 DISABLE_SSH = false
 SSH_PORT = ${gitea_ssh_port}
 SSH_LISTEN_PORT = 22
